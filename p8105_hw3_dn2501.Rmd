@@ -107,7 +107,8 @@ accel_df =
   mutate(
     week = factor(week), 
     day_type = factor(day_type), 
-    day = factor(day))
+    day = factor(day),
+    minute = as.double(minute))
 ```
 
 The `accel_df` dataset contains `r nrow(accel_df)` rows and `r ncol(accel_df)` columns. It shows the activity of a 63-year-old male with a BMI of 25 diagnosed with congestive heart failure over the course of 5 weeks, with activity observations recorded every minute over this time period. The variables included are week, type of day, some day ID, day, minute, and amount of activity done throughout each minute recorded.
@@ -123,3 +124,23 @@ accel_df %>%
 
 According to the table, this 63-year-old appeared to be most active on Fridays, in general. His activity seemed relatively uniform for all other days, however it is important to note that in the last two Saturdays (Weeks 4 and 5), he recorded the lowest amount of activity possible. Maybe he did not wear his accelerometer at all those days, or he just wasn't active at all, with the former being more likely.
 
+Now, let's make a plot of activity trends for each day throughout the week!
+
+```{r daily activity by day of the week plot, message = FALSE}
+accel_df %>% 
+  group_by(day, minute) %>% 
+  summarize(mean_activity = mean(activity)) %>% 
+  ggplot(aes(x = minute, y = mean_activity, color = day)) +
+  geom_line(alpha = 0.67) +
+  labs(
+    title = "Activity Per Minute of the Day",
+    x = "Minute of the Day",
+    y = "Activity",
+    legend = "Day of the Week") +
+  scale_x_continuous(
+    breaks = c(0, 180, 360, 540, 720, 900, 1080, 1260, 1440), 
+    labels = c("0", "180", "360", "540", "720", "900", "1080", "1260", "1440")) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Throughout the first 400 minutes of the day, the man displays minimal activity, which means he's probably sleeping between the hours of 12AM to 7AM. There appear to be consistent spikes at around the 630-680 minute marks on Sundays around 10-11AM, which could be due to scheduled exercise. There also appear to be peaks on Fridays between the 1200 and 1300 minute marks, which could also be due to regularly scheduled workouts. He is generally most active Sunday afternoon (from 10 - 11AM) and Friday evening (from 8 - 10PM).
