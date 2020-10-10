@@ -1,1 +1,3 @@
 # p8105_hw3_dn2501
+
+This is Homework #3...
