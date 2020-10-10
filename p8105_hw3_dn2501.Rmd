@@ -84,3 +84,31 @@ instacart %>%
     values_from = mean_hour)
 ```
 
+## Problem 2
+
+Load and tidy the accelerometer dataset:
+
+```{r load and tidy accel data, message = FALSE}
+accel_df = 
+  read_csv("./data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute", 
+    names_prefix = "activity.", 
+    values_to = "activity"
+  ) %>% 
+  mutate(
+    day_type = case_when(
+      day %in% c("Saturday", "Sunday") ~ "weekend",
+      day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday") ~ "weekday")
+    ) %>% 
+  relocate(week, day_type) %>% 
+  mutate(
+    week = factor(week), 
+    day_type = factor(day_type), 
+    day = factor(day))
+```
+
+The `accel_df` dataset contains `r nrow(accel_df)` rows and `r ncol(accel_df)` columns. It shows the activity of a 63-year-old male with a BMI of 25 diagnosed with congestive heart failure over the course of 5 weeks, with activity observations recorded every minute over this time period. The variables included are week, type of day, some day ID, day, minute, and amount of activity done throughout that 1 minute.
+
