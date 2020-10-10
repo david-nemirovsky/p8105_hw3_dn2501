@@ -1,12 +1,13 @@
 ---
-title: "eda"
+title: "Homework 3"
 author: "David Nemirovsky"
-date: "10/9/2020"
-output: html_document
+date: "10/10/2020"
+output: github_document
 ---
 
-```{r setup}
+```{r setup, include = FALSE}
 library(tidyverse)
+library(p8105.datasets)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -25,179 +26,61 @@ scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
 
-## Load the weather data
+## Problem 1
+
+Load the instacart dataset:
 
 ```{r}
-weather_df = 
-  rnoaa::meteo_pull_monitors(
-    c("USW00094728", "USC00519397", "USS0023B17S"),
-    var = c("PRCP", "TMIN", "TMAX"), 
-    date_min = "2017-01-01",
-    date_max = "2017-12-31") %>%
+data("instacart")
+```
+
+This dataset contains `r nrow(instacart)` rows and `r ncol(instacart)` columns. There are user and order variables such as user ID, order ID, order day, and order hour. There are also item variables such as name, aisle, department, and numeric code.
+
+How many aisles, and which are the most items from?
+
+```{r counting aisles, results = 'hide'}
+instacart %>% 
+  count(aisle) %>% 
+  arrange(desc(n))
+```
+
+Let's make a plot:
+
+```{r ggplot of items ordered in each aisle}
+instacart %>% 
+  count(aisle) %>% 
+  filter(n > 10000) %>% 
   mutate(
-    name = recode(
-      id, 
-      USW00094728 = "CentralPark_NY", 
-      USC00519397 = "Waikiki_HA",
-      USS0023B17S = "Waterhole_WA"),
-    tmin = tmin / 10,
-    tmax = tmax / 10,
-    month = lubridate::floor_date(date, unit = "month")) %>%
-  select(name, id, everything())
-
-weather_df
-```
-
-## group_by`
-
-```{r}
-weather_df %>% 
-  group_by(name, month)
-```
-
-## Counting things
-
-Count month observations:
-
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(n_obs = n())
-```
-
-We can use `count`
-
-```{r}
-weather_df %>% 
-  count(name, month, name = "n_obs")
-```
-
-***NEVER*** use base R's `table`
-
-```{r}
-weather_df %>% 
-  pull(month) %>% 
-  table()
-```
-
-Other helpful counters:
-
-```{r}
-weather_df %>% 
-  group_by(month) %>% 
-  summarize(
-    n_obs = n(),
-    n_days = n_distinct(date))
-```
-
-## A digression on 2 x 2 tables
-
-```{r}
-weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
-  mutate(
-    cold = case_when(
-      tmax < 5 ~ "cold",
-      tmax >= 5 ~ "not_cold",
-      TRUE ~ "")) %>% 
-  group_by(name, cold) %>% 
-  summarize(count = n())
-```
-
-```{r}
-weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
-  mutate(
-    cold = case_when(
-      tmax < 5 ~ "cold",
-      tmax >= 5 ~ "not_cold",
-      TRUE ~ "")) %>% 
-  janitor::tabyl(name, cold)
-```
-
-## General Summaries
-
-```{r}
-weather_df %>% 
-  group_by(month) %>%
-  summarize(
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    mean_prcp = mean(prcp, na.rm = TRUE),
-    median_tmin = median(tmin, na.rm = TRUE))
-```
-
-This is a dataframe!! So we can make a plot.
-
-```{r}
-weather_df %>% 
-  group_by(name, month) %>%
-  summarize(
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    mean_prcp = mean(prcp, na.rm = TRUE),
-    median_tmin = median(tmin, na.rm = TRUE)
-    ) %>% 
-  ggplot(aes(x = month, y = mean_tmax, color = name)) +
+    aisle = factor(aisle),
+    aisle = fct_reorder(aisle,n)
+  ) %>% 
+  ggplot(aes(x = aisle, y = n)) +
   geom_point() +
-  geom_line()
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
-Suppose you want to summarize many columns in the same way:
+Let's make a table:
 
-```{r}
-weather_df %>% 
-  group_by(name, month) %>%
-  summarize(across(prcp:tmin,mean))
+```{r table for specific aisles}
+instacart %>% 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+  group_by(aisle) %>% 
+  count(product_name) %>% 
+  mutate(rank = min_rank(desc(n))) %>% 
+  filter(rank < 4) %>% 
+  arrange(aisle, rank) %>% 
+  knitr::kable()
 ```
 
-Reminder: Sometimes your results are easier to read in another format:
+Apples vs Ice Cream:
 
-```{r}
-weather_df %>% 
-  group_by(name, month) %>%
-  summarize(mean_tmax = mean(tmax)) %>% 
+```{r table for specific products vs day of week}
+instacart %>% 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(mean_hour = mean(order_hour_of_day)) %>% 
   pivot_wider(
-    names_from = name,
-    values_from = mean_tmax
-  ) %>% 
-  knitr::kable(digits = 1)
+    names_from = order_dow,
+    values_from = mean_hour)
 ```
 
-## `group_by` and `mutate   `
-
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    centered_tmax = tmax - mean_tmax
-  ) %>% 
-  ggplot(aes(x = date, y = centered_tmax, color = name)) +
-  geom_point()
-```
-
-What about window functions?
-
-Ranking:
-
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  mutate(
-    temp_rank = min_rank(desc(tmax)))
-```
-
-Lag:
-
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(temp_change = tmax - lag(tmax)) %>% 
-  summarize(
-    temp_change_max = max(temp_change, na.rm = TRUE),
-    temp_change_sd = sd(temp_change, na.rm = TRUE)
-  )
-```
-
-## Quick Note
-
-Summarize only gets you so far.
