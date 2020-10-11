@@ -107,8 +107,9 @@ accel_df =
   mutate(
     week = factor(week), 
     day_type = factor(day_type), 
-    day = factor(day),
-    minute = as.double(minute))
+    day = factor(day), 
+    minute = as.double(minute)) %>% 
+  mutate(day = forcats::fct_relevel(day, c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")))
 ```
 
 The `accel_df` dataset contains `r nrow(accel_df)` rows and `r ncol(accel_df)` columns. It shows the activity of a 63-year-old male with a BMI of 25 diagnosed with congestive heart failure over the course of 5 weeks, with activity observations recorded every minute over this time period. The variables included are week, type of day, some day ID, day, minute, and amount of activity done throughout each minute recorded.
@@ -143,4 +144,31 @@ accel_df %>%
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Throughout the first 400 minutes of the day, the man displays minimal activity, which means he's probably sleeping between the hours of 12AM to 7AM. There appear to be consistent spikes at around the 630-680 minute marks on Sundays around 10-11AM, which could be due to scheduled exercise. There also appear to be peaks on Fridays between the 1200 and 1300 minute marks, which could also be due to regularly scheduled workouts. He is generally most active Sunday afternoon (from 10 - 11AM) and Friday evening (from 8 - 10PM).
+Throughout the first 400 minutes of the day, the man displays minimal activity, which means he's probably sleeping between the hours of 12AM and 7AM, regularly. There appear to be consistent spikes at around the 630-680 minute marks on Sundays around 10-11AM, which could be due to scheduled exercise. There also appear to be peaks on Fridays between the 1200 and 1300 minute marks, which could also be due to regularly scheduled workouts. He is generally most active Sunday afternoon (from 10 - 11AM) and Friday evening (from 8 - 10PM).
+
+## Problem 3
+
+Load and clean the NY NOAA data:
+
+```{r load and clean NY NOAA data, message = FALSE}
+data("ny_noaa")
+ny_noaa = 
+  ny_noaa %>% 
+  separate(date, into = c("year", "month", "day"), sep = "-") %>% 
+  mutate(
+    year = factor(year),
+    month = factor(month),
+    day = factor(day), 
+    tmax = as.double(tmax),
+    tmax = tmax / 10,
+    tmin = as.double(tmin),
+    tmin = tmin / 10,
+    prcp = prcp / 10)
+ny_noaa %>% 
+  group_by(snow) %>% 
+  summarize(n_obs = n())
+```
+
+For snowfall, the most commonly observed value is 0, that is because it does not snow throughout the majority of the year in New York state.
+
+
